@@ -1,0 +1,84 @@
+.footer-wrapper {
+    background-color: var(--bg-card);
+    border-top: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+.footer-brand-icon {
+    color: var(--accent-green);
+}
+
+.footer-brand-text {
+    font-weight: 600;
+    font-size: 1.25rem;
+    color: var(--text-primary);
+}
+
+.footer-brand-text .vault {
+    color: var(--accent-green);
+}
+
+.footer-description {
+    font-size: 0.8125rem;
+    max-width: 280px;
+    margin: 0 auto;
+}
+
+.footer-links {
+    padding: 0.35rem;
+    background-color: var(--bg-code-header);
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+}
+
+.footer-links a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 0.45rem 0.75rem;
+    border-radius: 999px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.footer-links a:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-hover-light);
+}
+
+.social-icon {
+    color: var(--text-secondary);
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.social-icon:hover {
+    color: var(--text-primary);
+    transform: translateY(-2px);
+}
+
+.footer-copyright {
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (min-width: 1200px) {
+    .footer-description {
+        margin: 0;
+    }
+
+    .footer-copyright {
+        justify-content: flex-end;
+    }
+}
+
+.heart-icon {
+    transition: fill 0.3s ease, transform 0.3s ease;
+    cursor: default;
+}
+
+.heart-icon:hover {
+    fill: var(--accent-danger);
+    transform: scale(1.15);
+}

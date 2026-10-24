@@ -1,0 +1,16 @@
+.oauth-success-wrapper {
+    background-color: var(--bg-background);
+    color: var(--text-primary);
+}
+
+
+.oauth-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.oauth-text {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}

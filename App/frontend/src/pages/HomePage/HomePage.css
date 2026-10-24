@@ -1,0 +1,99 @@
+.feed-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    color: var(--text-primary);
+}
+
+.feed-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-top: 2px !important;
+}
+
+.text-primary-custom {
+    color: var(--accent-green);
+}
+
+.aside-card-title {
+    font-size: 0.875rem;
+}
+
+.aside-card-content {
+    font-size: 0.875rem;
+}
+
+.aside-footer-text {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+
+.trending-badge {
+    background-color: var(--bg-hover-light);
+    color: var(--text-primary);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+}
+
+.trending-badge:hover {
+    background-color: var(--bg-hover-strong);
+}
+
+.trending-count {
+    color: var(--text-secondary);
+    margin-left: 6px;
+}
+
+.snippet-day-link {
+    font-weight: 500;
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.snippet-day-link:hover {
+    color: var(--accent-green);
+}
+
+.locked-feed-card {
+    background-color: var(--bg-code-block);
+}
+
+.locked-icon {
+    color: var(--text-secondary);
+}
+
+.locked-title {
+    font-size: 1.25rem;
+}
+
+.locked-subtitle {
+    color: var(--text-secondary);
+    max-width: 400px;
+}
+
+.locked-login-link {
+    text-decoration: none;
+}
+
+.error-feed-card {
+    background-color: var(--bg-code-block);
+}
+
+.error-subtitle {
+    max-width: 400px;
+    color: var(--text-secondary)
+}
+
+.modal-backdrop.show {
+    opacity: 0.7;
+    background-color: var(--bg-dark);
+
+}

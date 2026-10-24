@@ -1,0 +1,19 @@
+.my-btn {
+    background-color: var(--accent-green);
+    color: var(--bg-dark);
+    border: none;
+    border-radius: 12px;
+    padding: 8px 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.my-btn:hover {
+    background-color: var(--accent-green-hover);
+}
+
+.my-btn:active {
+    transform: scale(0.95);
+
+}

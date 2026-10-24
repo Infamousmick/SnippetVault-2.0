@@ -1,0 +1,193 @@
+.settings-page-title {
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
+.settings-section-title {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.settings-section-desc {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.settings-container {
+    max-width: 500px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.settings-card {
+    background-color: var(--bg-code-block);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.settings-title-icon {
+    color: var(--accent-green);
+}
+
+.settings-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.settings-input {
+    width: 100%;
+    max-width: 100%;
+    background-color: var(--bg-background);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.6rem 0.8rem;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.settings-input:focus {
+    outline: none;
+    border-color: var(--accent-green);
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
+}
+
+.settings-sidebar .nav-link {
+    color: var(--text-secondary);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.settings-sidebar .nav-link:hover {
+    background-color: var(--bg-hover-light);
+    color: var(--text-primary);
+}
+
+.settings-sidebar .nav-link.active {
+    background-color: rgba(16, 185, 129, 0.1) !important;
+    color: var(--accent-green) !important;
+}
+
+.settings-content-card {
+    background-color: var(--bg-code-block);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 2rem;
+    min-height: 400px;
+}
+
+
+.max-w-md {
+    max-width: 450px;
+}
+
+.coming-soon-badge {
+    display: inline-block;
+    background-color: var(--bg-hover-strong);
+    color: var(--text-secondary);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border: 1px dashed var(--border-color);
+}
+
+.oauth-info-box {
+    background-color: var(--bg-hover-light);
+    border: 1px dashed var(--border-color);
+    border-radius: 12px;
+    padding: 3rem 2rem;
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.oauth-icon-wrapper {
+    color: var(--accent-green);
+    margin-bottom: 1.5rem;
+    display: inline-block;
+    padding: 1rem;
+    background-color: rgba(75, 213, 139, 0.1);
+    border-radius: 50%;
+}
+
+.settings-sidebar::-webkit-scrollbar {
+    height: 6px;
+    width: 6px;
+}
+
+.settings-file-upload-label {
+    cursor: pointer;
+    border-style: dashed;
+}
+
+.settings-divider {
+    border-color: var(--border-color);
+    opacity: 0.5;
+}
+
+.btn-danger-custom {
+    background-color: transparent !important;
+    border: 1px solid var(--accent-danger) !important;
+    color: var(--accent-danger) !important;
+}
+
+.btn-danger-custom:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    background-color: transparent !important;
+    color: var(--accent-danger) !important;
+}
+
+.btn-danger-custom:hover {
+    background-color: var(--accent-danger) !important;
+    color: white !important;
+}
+
+.danger-zone-box {
+    background-color: rgba(234, 60, 63, 0.05);
+    border: 1px solid var(--accent-danger);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-top: 1rem;
+}
+
+.danger-icon-wrapper {
+    color: var(--accent-danger);
+    background-color: rgba(234, 60, 63, 0.1);
+    padding: 0.6rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.danger-zone-title {
+    color: var(--accent-danger);
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.danger-zone-desc {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+.danger-zone-input {
+    border-color: var(--accent-danger) !important;
+}
+
+.danger-zone-input:focus {
+    box-shadow: 0 0 0 2px rgba(234, 60, 63, 0.15) !important;
+    border-color: var(--accent-danger) !important;
+}

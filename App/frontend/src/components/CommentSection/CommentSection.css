@@ -1,0 +1,76 @@
+.comment-section-container {
+    border-top: 1px solid var(--border-color);
+    padding-top: 1.5rem;
+    padding: 1.5rem 1.8rem;
+    margin-top: 1rem;
+    animation: slideDown 0.3s ease-out forwards;
+}
+
+
+.comment-item {
+    background-color: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px 16px;
+    transition: all 0.2s ease;
+}
+
+.comment-item:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.comment-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.comment-text {
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    line-height: 1.5;
+    margin-top: 8px;
+}
+
+.active-comment-btn {
+    color: var(--accent-green) !important;
+    background-color: var(--bg-hover-strong);
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.comment-form-wrapper {
+    margin-bottom: 2rem;
+}
+
+.comment-form {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.comment-status-message {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.empty-state {
+    font-family: var(--font-mono, monospace);
+    color: var(--text-secondary);
+    background-color: var(--bg-code-block);
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 2.5rem 1rem;
+    margin-top: 1rem;
+}

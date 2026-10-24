@@ -1,0 +1,45 @@
+{
+  "name": "snippetvault",
+  "version": "1.7.0",
+  "description": "💻 SnippetVault | Your personal code hub. Share syntax-highlighted snippets, fork the best solutions, and understand complex code with Gemini AI integration.",
+  "main": "main.js",
+  "engines": {
+    "node": ">=20.19.0 <23.0.0"
+  },
+  "scripts": {
+    "dev": "nodemon main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Infamousmick/SnippetVault.git"
+  },
+  "keywords": [],
+  "author": "InfaMick",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Infamousmick/SnippetVault/issues"
+  },
+  "homepage": "https://github.com/Infamousmick/SnippetVault#readme",
+  "dependencies": {
+    "@google/genai": "^2.12.0",
+    "bcrypt": "^6.0.0",
+    "cloudinary": "^1.41.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.5.2",
+    "express-session": "^1.19.0",
+    "express-validator": "^7.3.2",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.7.1",
+    "multer": "^2.2.0",
+    "multer-storage-cloudinary": "^4.0.0",
+    "passport": "^0.7.0",
+    "passport-github2": "^0.1.12",
+    "passport-google-oauth20": "^2.0.0",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}

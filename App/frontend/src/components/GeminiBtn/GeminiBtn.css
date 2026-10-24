@@ -1,0 +1,38 @@
+.gemini-btn {
+    background-image: linear-gradient(100deg, rgb(73, 124, 253), rgb(0, 158, 217), rgb(0, 190, 199));
+    box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+        0 0 18px -2px rgba(0, 153, 238, 0.35),
+        0 0 42px -8px rgba(0, 158, 217, 0.45);
+    border: none;
+    padding: 0.35rem 0.8rem;
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.gemini-btn:hover {
+    filter: brightness(1.15);
+    transform: translateY(-1px);
+    box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.2) inset,
+        0 0 22px 0px rgba(0, 153, 238, 0.5),
+        0 0 46px -4px rgba(0, 158, 217, 0.6);
+}
+
+.gemini-btn:active {
+    transform: translateY(1px);
+    filter: brightness(0.95);
+}
+
+.gemini-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+    transform: none;
+    filter: grayscale(0.2);
+}

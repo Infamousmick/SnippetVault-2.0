@@ -1,0 +1,35 @@
+.comment-item {
+    background-color: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px 16px;
+    transition: all 0.2s ease;
+}
+
+.comment-item:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.comment-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.comment-author {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.comment-date {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}
+
+.comment-body {
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    line-height: 1.5;
+}

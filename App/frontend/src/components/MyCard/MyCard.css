@@ -1,0 +1,42 @@
+.my-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.my-card-header {
+  padding: 1.5rem 1.5rem 0.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.my-card-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-primary);
+}
+
+.my-card-description {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.my-card-content {
+  padding: 1rem 1.5rem;
+}
+
+.my-card-footer {
+  padding: 0.8rem 1.5rem;
+  border-top: 1px solid var(--border-color);
+  background-color: var(--bg-footer);
+  display: flex;
+  align-items: center;
+}
