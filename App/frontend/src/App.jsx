@@ -5,7 +5,6 @@ import HomePage from "./pages/HomePage/HomePage";
 import NotFoundPage from "./pages/NotFoundPage/NotFoundPage";
 import Login from "./pages/Login/Login";
 import Register from "./pages/Register/Register";
-import OauthSuccess from "./pages/OauthSuccess/OauthSuccess";
 import { AuthProvider } from "./context/AuthContext/AuthContext";
 import { SnippetProvider } from "./context/SnippetContext/SnippetContext";
 import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
@@ -22,7 +21,6 @@ function App() {
               <Route path="/" element={<HomePage />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              <Route path="/oauth/success/" element={<OauthSuccess />} />
 
               <Route
                 path="/profile/:userId?"

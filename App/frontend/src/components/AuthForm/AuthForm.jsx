@@ -19,9 +19,6 @@ const oauths = [
   { id: 1, name: "google", icon: FcGoogle, label: "Continue with Google" },
 ];
 
-const handleOAuthLogin = (provider) => {
-  window.location.href = `${import.meta.env.VITE_APP_SERVERURL}/oauth/${provider}`;
-};
 
 export const AuthInput = ({ icon: Icon, className, ...inputProps }) => (
   <div className="position-relative">
@@ -36,6 +33,7 @@ const AuthForm = ({
   error,
   successMessage,
   onSubmit,
+  onOAuthLogin,       
   submitLabel,
   footerText,
   footerLinkTo,
@@ -60,7 +58,7 @@ const AuthForm = ({
                     type="button"
                     key={oauth.id}
                     className="oauth-btn"
-                    onClick={() => handleOAuthLogin(oauth.name)}
+                    onClick={() => onOAuthLogin(oauth.name)}
                   >
                     <Icon size={18} /> {oauth.label}
                   </button>

@@ -1,78 +1,54 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import BaseLayout from "../../Layout/BaseLayout";
 import AuthForm, { AuthInput } from "../../components/AuthForm/AuthForm";
+import { AuthContext } from "../../context/AuthContext/AuthContext";
 import { Mail, KeyRound, AtSign } from "lucide-react";
+import { getAuthErrorMessage } from "../../utils/authErrors";
 
 const Register = () => {
+  const { isLoggedIn, registerUser, loginWithGoogle, loginWithGithub } =
+    useContext(AuthContext);
   const [formData, setFormData] = useState({
     email: "",
     username: "",
     password: "",
   });
   const [err, setErr] = useState(null);
-  const [isRegistered, setIsRegistered] = useState(false);
-
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isRegistered) {
-      const timer = setTimeout(() => {
-        navigate("/login");
-      }, 3000);
-
+    if (isLoggedIn) {
+      const timer = setTimeout(() => navigate("/"), 1500);
       return () => clearTimeout(timer);
     }
-  }, [isRegistered, navigate]);
+  }, [isLoggedIn, navigate]);
 
-  const handleChange = (e) => {
+  const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErr(null);
-
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_APP_SERVERURL}/auth/register`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: formData.email,
-            username: formData.username,
-            password: formData.password,
-          }),
-        },
-      );
-
-      if (!response.ok) {
-        const errData = await response.json();
-
-        if (errData.errors && errData.errors.length > 0) {
-          const errorList = (
-            <ul className="mb-0 text-start">
-              {errData.errors.map((errObj, index) => (
-                <li key={index}>{errObj.message}</li>
-              ))}
-            </ul>
-          );
-          setErr(errorList);
-          return;
-        }
-        throw new Error(errData.message || "Registration failed");
-      }
-
-      setIsRegistered(true);
+      await registerUser(formData);
     } catch (error) {
-      setErr(error.message || "Errore di connessione");
+      setErr(getAuthErrorMessage(error));
     }
   };
 
-  return (
+  const handleOAuth = async (provider) => {
+    setErr(null);
+    try {
+      if (provider === "google") await loginWithGoogle();
+      else await loginWithGithub();
+    } catch (error) {
+      setErr(getAuthErrorMessage(error));
+    }
+  };
+
+  
+    return (
     <BaseLayout>
       <AuthForm
         title={
@@ -82,8 +58,9 @@ const Register = () => {
         }
         description="Register to SnippetVault"
         error={err}
-        successMessage={isRegistered ? "Registered successfully!" : null}
+        successMessage={isLoggedIn ? "Registered successfully!" : null}
         onSubmit={handleSubmit}
+        onOAuthLogin={handleOAuth}
         submitLabel="Register"
         footerText="Have an account?"
         footerLinkTo="/login"
