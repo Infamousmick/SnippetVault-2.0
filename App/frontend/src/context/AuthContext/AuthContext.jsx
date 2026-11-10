@@ -18,13 +18,17 @@ export const AuthContext = createContext();
 const sanitizeUsername = (raw = "") =>
   raw.replace(/[^a-zA-Z0-9_.-]/g, "").slice(0, 20);
 
-const buildUser = (fbUser, profile) => ({
-  ...profile,
-  _id: fbUser.uid,
-  email: fbUser.email,
-  avatar: profile?.avatar ?? fbUser.photoURL ?? null,
-  providers: fbUser.providerData.map((p) => p.providerId),
-});
+const buildUser = (fbUser, profile) => {
+  const avatar = profile?.avatar ?? fbUser.photoURL ?? null;
+  return {
+    ...profile,
+    _id: fbUser.uid,
+    email: fbUser.email,
+    avatar,
+    avatar_url: avatar ?? "https://placehold.co/150",
+    providers: fbUser.providerData.map((p) => p.providerId),
+  };
+};
 
 const createProfile = async (fbUser, desiredUsername) => {
   let base = sanitizeUsername(
@@ -63,7 +67,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const pendingUsername = useRef(null);
-  const pendingLink = useRef(null); 
+  const pendingLink = useRef(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
@@ -92,7 +96,7 @@ export const AuthProvider = ({ children }) => {
     return unsubscribe;
   }, []);
 
-    const linkPendingCredential = async (fbUser) => {
+  const linkPendingCredential = async (fbUser) => {
     const pending = pendingLink.current;
     if (!pending) return;
     pendingLink.current = null;
