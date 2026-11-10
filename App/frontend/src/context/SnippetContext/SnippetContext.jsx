@@ -10,11 +10,24 @@ import { Modal } from "react-bootstrap";
 import { AuthContext } from "../AuthContext/AuthContext";
 import SnippetForm from "../../components/SnippetForm/SnippetForm";
 import { mergeSnippetUpdate } from "../../utils/mergeSnippetUpdate";
+import * as snippetsService from "../../services/snippetsService";
 
 export const SnippetContext = createContext();
 
+const flipStar = (snippet, userId) => {
+  const hasStarred = snippet.stars.includes(userId);
+  return {
+    ...snippet,
+    stars: hasStarred
+      ? snippet.stars.filter((id) => id !== userId)
+      : [...snippet.stars, userId],
+    starsCount: hasStarred ? snippet.starsCount - 1 : snippet.starsCount + 1,
+  };
+};
+
 export const SnippetProvider = ({ children }) => {
-  const { isLoggedIn, logoutUser, user } = useContext(AuthContext);
+  const { isLoggedIn, user } = useContext(AuthContext);
+  const uid = user?._id;
 
   const [snippets, setSnippets] = useState([]);
   const [error, setError] = useState(null);
@@ -30,6 +43,8 @@ export const SnippetProvider = ({ children }) => {
   const [isStarredOnly, setIsStarredOnly] = useState(false);
   const [isAiOnly, setIsAiOnly] = useState(false);
   const modalSuccessCallbackRef = useRef(null);
+  // cursori di paginazione di Firestore (ultimo documento di ogni pagina)
+  const cursorStoreRef = useRef({ key: null, cursors: [] });
 
   useEffect(() => {
     const debounceTimeout = setTimeout(() => {
@@ -43,38 +58,41 @@ export const SnippetProvider = ({ children }) => {
     setPage(1);
   }, [debouncedQuery]);
 
+  const resetCursors = () => {
+    cursorStoreRef.current = { key: null, cursors: [] };
+  };
+
   const fetchSnippets = useCallback(async () => {
+    if (!uid) return;
     setError(null);
     setIsLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(
-        `${import.meta.env.VITE_APP_SERVERURL}/snippets/?sort=${activeFilter}&page=${page}&pageSize=5&queryStr=${encodeURIComponent(debouncedQuery)}&starred=${isStarredOnly}&ai=${isAiOnly}`,
+      const data = await snippetsService.listSnippets(
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
+          sort: activeFilter,
+          page,
+          pageSize: 5,
+          queryStr: debouncedQuery,
+          starred: isStarredOnly,
+          ai: isAiOnly,
+          uid,
         },
+        cursorStoreRef.current,
       );
-
-      if (response.status === 401) {
-        logoutUser();
-        return;
-      }
-      if (!response.ok) throw new Error("Unable to retrieve data");
-
-      const data = await response.json();
-      console.log(data);
       setSnippets(data.allSnippets);
       setTotalPages(data.totalPages || 1);
-    } catch (error) {
-      console.error(error);
-      setError("Oops! Something went wrong while loading the feed.");
+    } catch (err) {
+      console.error(err);
+      setError(
+        snippetsService.getFirestoreErrorMessage(
+          err,
+          "Oops! Something went wrong while loading the feed.",
+        ),
+      );
     } finally {
       setIsLoading(false);
     }
-  }, [activeFilter, page, debouncedQuery, logoutUser, isStarredOnly, isAiOnly]);
+  }, [activeFilter, page, debouncedQuery, uid, isStarredOnly, isAiOnly]);
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -85,34 +103,19 @@ export const SnippetProvider = ({ children }) => {
   const handleCreateSnippet = async (formData) => {
     setIsCreating(true);
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(
-        `${import.meta.env.VITE_APP_SERVERURL}/snippets/`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(formData),
-        },
-      );
-
-      if (response.status === 401) {
-        logoutUser();
-        return;
-      }
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create snippet.");
-      }
+      await snippetsService.createSnippet(formData, uid);
 
       setShowModal(false);
+      resetCursors();
       await fetchSnippets();
-    } catch (error) {
-      console.error(error);
-      alert(error.message || "Something went wrong...");
+    } catch (err) {
+      console.error(err);
+      alert(
+        snippetsService.getFirestoreErrorMessage(
+          err,
+          "Something went wrong...",
+        ),
+      );
     } finally {
       setIsCreating(false);
     }
@@ -121,29 +124,10 @@ export const SnippetProvider = ({ children }) => {
   const handleEditSnippet = async (formData, snippetId) => {
     setIsCreating(true);
     try {
-      const token = localStorage.getItem("token");
-
-      const response = await fetch(
-        `${import.meta.env.VITE_APP_SERVERURL}/snippets/${snippetId}`,
-        {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(formData),
-        },
+      const updatedSnippet = await snippetsService.editSnippet(
+        snippetId,
+        formData,
       );
-
-      if (response.status === 401) {
-        logoutUser();
-        return;
-      }
-
-      if (!response.ok) throw new Error("Failed to edit snippet.");
-
-      const data = await response.json();
-      const updatedSnippet = data.editedSnippet;
 
       setSnippets((prevSnippets) =>
         prevSnippets.map((s) =>
@@ -152,6 +136,7 @@ export const SnippetProvider = ({ children }) => {
             : s,
         ),
       );
+      resetCursors();
 
       setShowModal(false);
       setEditingSnippet(null);
@@ -160,9 +145,14 @@ export const SnippetProvider = ({ children }) => {
         modalSuccessCallbackRef.current(updatedSnippet);
         modalSuccessCallbackRef.current = null;
       }
-    } catch (error) {
-      console.warn(error);
-      alert(error.message || "Something went wrong while editing...");
+    } catch (err) {
+      console.warn(err);
+      alert(
+        snippetsService.getFirestoreErrorMessage(
+          err,
+          "Something went wrong while editing...",
+        ),
+      );
     } finally {
       setIsCreating(false);
     }
@@ -170,119 +160,88 @@ export const SnippetProvider = ({ children }) => {
 
   const handleDeleteSnippet = async (snippetId) => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(
-        `${import.meta.env.VITE_APP_SERVERURL}/snippets/${snippetId}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-
-      if (response.status === 401) {
-        logoutUser();
-        return false;
-      }
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to delete snippet.");
-      }
+      await snippetsService.deleteSnippet(snippetId, uid);
 
       setSnippets((prevSnippets) =>
         prevSnippets.filter((snippet) => snippet._id !== snippetId),
       );
+      resetCursors();
       return true;
-    } catch (error) {
-      console.error(error);
-      alert(error.message || "Something went wrong while deleting...");
+    } catch (err) {
+      console.error(err);
+      alert(
+        snippetsService.getFirestoreErrorMessage(
+          err,
+          "Something went wrong while deleting...",
+        ),
+      );
       return false;
     }
   };
 
   const handleToggleStar = async (snippetId, userId) => {
+    // aggiornamento ottimistico
     setSnippets((prevSnippets) =>
-      prevSnippets.map((snippet) => {
-        if (snippet._id.toString() !== snippetId) return snippet;
-
-        const hasStarred = snippet.stars.includes(userId);
-        return {
-          ...snippet,
-          stars: hasStarred
-            ? snippet.stars.filter((id) => id !== userId)
-            : [...snippet.stars, userId],
-          starsCount: hasStarred
-            ? snippet.starsCount - 1
-            : snippet.starsCount + 1,
-        };
-      }),
+      prevSnippets.map((snippet) =>
+        snippet._id === snippetId ? flipStar(snippet, userId) : snippet,
+      ),
     );
 
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(
-        `${import.meta.env.VITE_APP_SERVERURL}/snippets/${snippetId}/star`,
-        {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
+      const { isStarred, starsCount } = await snippetsService.toggleStar(
+        snippetId,
+        userId,
       );
 
-      if (response.status === 401) {
-        logoutUser();
-        return;
-      }
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to toggle star.");
-      }
-    } catch (error) {
-      console.error(error);
-      alert(error.message || "Something went wrong while toggling star...");
-    }
-  };
-
-  const handleForkSnippet = async (snippetId) => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(
-        `${import.meta.env.VITE_APP_SERVERURL}/snippets/${snippetId}/fork`,
-        {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-
-      if (response.status === 401) {
-        logoutUser();
-        return;
-      }
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to fork snippet.");
-      }
-
+      // allineo allo stato reale del server
       setSnippets((prevSnippets) =>
         prevSnippets.map((snippet) =>
           snippet._id === snippetId
             ? {
                 ...snippet,
-                forksCount: (snippet.forksCount || 0) + 1,
-                forks: [...(snippet.forks || []), user._id],
+                starsCount,
+                stars: isStarred
+                  ? [...new Set([...snippet.stars, userId])]
+                  : snippet.stars.filter((id) => id !== userId),
               }
             : snippet,
         ),
       );
-
-      return data.forkedSnippet;
-    } catch (error) {
-      throw error;
+      resetCursors();
+    } catch (err) {
+      console.error(err);
+      // annullo l'aggiornamento ottimistico
+      setSnippets((prevSnippets) =>
+        prevSnippets.map((snippet) =>
+          snippet._id === snippetId ? flipStar(snippet, userId) : snippet,
+        ),
+      );
+      alert(
+        snippetsService.getFirestoreErrorMessage(
+          err,
+          "Something went wrong while toggling star...",
+        ),
+      );
     }
+  };
+
+  const handleForkSnippet = async (snippetId) => {
+    const forkedSnippet = await snippetsService.forkSnippet(snippetId, uid);
+
+    setSnippets((prevSnippets) =>
+      prevSnippets.map((snippet) =>
+        snippet._id === snippetId
+          ? {
+              ...snippet,
+              forksCount: (snippet.forksCount || 0) + 1,
+              forks: [...(snippet.forks || []), uid],
+            }
+          : snippet,
+      ),
+    );
+    resetCursors();
+
+    return forkedSnippet;
   };
 
   const value = {
