@@ -2,22 +2,206 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // ---------------------------------------------------------------
+    // Helpers
+    // ---------------------------------------------------------------
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function docPath(col, id) {
+      return /databases/$(database)/documents/$(col)/$(id);
+    }
+
+    // ---------------------------------------------------------------
+    // users & usernames
+    // ---------------------------------------------------------------
+    function validUsername(d) {
+      return d.username is string
+        && d.username.matches('^[a-zA-Z0-9_.-]{3,20}$')
+        && d.usernameLower == d.username.lower();
+    }
+
     match /users/{uid} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null
+      allow read: if signedIn();
+
+      allow create: if signedIn()
         && request.auth.uid == uid
-        && getAfter(/databases/$(database)/documents/usernames/$(request.resource.data.usernameLower)).data.uid == uid;
-      allow update: if request.auth != null
+        && request.resource.data.keys().hasOnly(['username', 'usernameLower', 'avatar', 'createdAt'])
+        && validUsername(request.resource.data)
+        && request.resource.data.createdAt == request.time
+        && getAfter(docPath('usernames', request.resource.data.usernameLower)).data.uid == uid;
+
+      // Il proprietario può cambiare solo username e avatar. hasGeminiKey
+      // lo scrivono solo le Cloud Functions (Admin SDK).
+      allow update: if signedIn()
         && request.auth.uid == uid
-        && request.resource.data.usernameLower == resource.data.usernameLower;
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['username', 'usernameLower', 'avatar'])
+        && validUsername(request.resource.data)
+        && (request.resource.data.avatar == null || request.resource.data.avatar is string)
+        && (request.resource.data.usernameLower == resource.data.usernameLower
+            || (getAfter(docPath('usernames', request.resource.data.usernameLower)).data.uid == uid
+                && !existsAfter(docPath('usernames', resource.data.usernameLower))));
+
       allow delete: if false;
     }
 
     match /usernames/{name} {
       allow get: if true;
-      allow create: if request.auth != null
-        && request.resource.data.uid == request.auth.uid;
-      allow update, delete: if false;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['uid'])
+        && request.resource.data.uid == request.auth.uid
+        && getAfter(docPath('users', request.auth.uid)).data.usernameLower == name;
+      allow update: if false;
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    // ---------------------------------------------------------------
+    // snippets
+    // ---------------------------------------------------------------
+    function snippetKeys() {
+      return ['title', 'description', 'is_ai_generated', 'code_content',
+              'language', 'tags', 'user_id', 'stars', 'starsCount',
+              'forked_from', 'forks', 'forksCount', 'commentsCount',
+              'searchKeywords', 'createdAt', 'updatedAt'];
+    }
+
+    function requiredSnippetKeys() {
+      return ['title', 'is_ai_generated', 'code_content', 'language', 'tags',
+              'user_id', 'stars', 'starsCount', 'forked_from', 'forks',
+              'forksCount', 'commentsCount', 'searchKeywords', 'createdAt',
+              'updatedAt'];
+    }
+
+    function validSnippet(d) {
+      return d.title is string && d.title.size() > 0 && d.title.size() <= 150
+        && (!('description' in d)
+            || (d.description is string && d.description.size() > 0 && d.description.size() <= 1000))
+        && d.is_ai_generated is bool
+        && d.code_content is string && d.code_content.size() > 0 && d.code_content.size() <= 50000
+        && d.language is string && d.language.size() > 0 && d.language.size() <= 50
+        && d.tags is list && d.tags.size() <= 10
+        && d.searchKeywords is list && d.searchKeywords.size() <= 400;
+    }
+
+    // Un fork ha id "<idOriginale>_<uidUtente>": un solo fork per utente
+    // e copia fedele di titolo, codice e linguaggio dell'originale.
+    function validForkOf(snippetId, d) {
+      let orig = get(docPath('snippets', d.forked_from)).data;
+      return d.forked_from is string
+        && snippetId == d.forked_from + '_' + request.auth.uid
+        && orig.user_id != request.auth.uid
+        && orig.code_content == d.code_content
+        && orig.title == d.title
+        && orig.language == d.language;
+    }
+
+    function validFork(snippetId, d) {
+      return d.forked_from == null || validForkOf(snippetId, d);
+    }
+
+    // Stella: aggiunge o toglie SOLO l'uid di chi scrive, contatore coerente
+    function starToggle() {
+      let before = resource.data;
+      let after = request.resource.data;
+      let added = after.stars.toSet().difference(before.stars.toSet());
+      let removed = before.stars.toSet().difference(after.stars.toSet());
+      return after.diff(before).affectedKeys().hasOnly(['stars', 'starsCount'])
+        && after.starsCount == after.stars.size()
+        && after.stars.size() == after.stars.toSet().size()
+        && ((added == [request.auth.uid].toSet() && removed.size() == 0)
+            || (removed == [request.auth.uid].toSet() && added.size() == 0));
+    }
+
+    // Contatore fork dell'originale: si muove solo insieme alla creazione
+    // (o cancellazione) del documento fork nello stesso batch
+    function forkCounter(snippetId) {
+      let before = resource.data;
+      let after = request.resource.data;
+      let added = after.forks.toSet().difference(before.forks.toSet());
+      let removed = before.forks.toSet().difference(after.forks.toSet());
+      let forkPath = docPath('snippets', snippetId + '_' + request.auth.uid);
+      return after.diff(before).affectedKeys().hasOnly(['forks', 'forksCount'])
+        && after.forksCount == after.forks.size()
+        && after.forks.size() == after.forks.toSet().size()
+        && ((added == [request.auth.uid].toSet() && removed.size() == 0
+             && !exists(forkPath) && existsAfter(forkPath))
+            || (removed == [request.auth.uid].toSet() && added.size() == 0
+             && exists(forkPath) && !existsAfter(forkPath)));
+    }
+
+    // Contatore commenti: solo +1 / -1 (verificabile al massimo in modo "lasco")
+    function commentCounter() {
+      let before = resource.data;
+      let after = request.resource.data;
+      return after.diff(before).affectedKeys().hasOnly(['commentsCount'])
+        && after.commentsCount >= 0
+        && (after.commentsCount == before.commentsCount + 1
+            || after.commentsCount == before.commentsCount - 1);
+    }
+
+    match /snippets/{snippetId} {
+      allow read: if signedIn();
+
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(snippetKeys())
+        && request.resource.data.keys().hasAll(requiredSnippetKeys())
+        && validSnippet(request.resource.data)
+        && request.resource.data.user_id == request.auth.uid
+        && request.resource.data.stars.size() == 0
+        && request.resource.data.starsCount == 0
+        && request.resource.data.forks.size() == 0
+        && request.resource.data.forksCount == 0
+        && request.resource.data.commentsCount == 0
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && validFork(snippetId, request.resource.data);
+
+      allow update: if signedIn() && (
+        // 1) il proprietario modifica i contenuti
+        (resource.data.user_id == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['title', 'description', 'is_ai_generated', 'code_content',
+                         'language', 'tags', 'searchKeywords', 'updatedAt'])
+          && validSnippet(request.resource.data)
+          && request.resource.data.updatedAt == request.time)
+        // 2) qualunque utente mette/toglie la propria stella
+        || starToggle()
+        // 3) fork: aggiorna i contatori dell'originale
+        || forkCounter(snippetId)
+        // 4) commenti: contatore +1 / -1
+        || commentCounter()
+      );
+
+      allow delete: if signedIn() && resource.data.user_id == request.auth.uid;
+
+      // -------------------------------------------------------------
+      // commenti
+      // -------------------------------------------------------------
+      function validCommentBody(b) {
+        return b is string && b.size() >= 5 && b.size() <= 100;
+      }
+
+      match /comments/{commentId} {
+        allow read: if signedIn();
+
+        allow create: if signedIn()
+          && request.resource.data.keys().hasOnly(['body', 'user_id', 'createdAt', 'updatedAt'])
+          && request.resource.data.user_id == request.auth.uid
+          && validCommentBody(request.resource.data.body)
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.updatedAt == request.time
+          && exists(docPath('snippets', snippetId));
+
+        allow update: if signedIn()
+          && resource.data.user_id == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['body', 'updatedAt'])
+          && validCommentBody(request.resource.data.body)
+          && request.resource.data.updatedAt == request.time;
+
+        allow delete: if signedIn() && resource.data.user_id == request.auth.uid;
+      }
     }
   }
 }

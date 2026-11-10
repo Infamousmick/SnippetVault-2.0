@@ -1,4 +1,508 @@
 {
-  "indexes": [],
-  "fieldOverrides": []
+  "indexes": [
+    {
+      "collectionGroup": "snippets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "starsCount",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "snippets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "forksCount",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "snippets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "is_ai_generated",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "starsCount",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "snippets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "is_ai_generated",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "forksCount",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "snippets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "is_ai_generated",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "snippets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "searchKeywords",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "starsCount",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "snippets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "searchKeywords",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "forksCount",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "snippets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "searchKeywords",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "snippets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "searchKeywords",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "is_ai_generated",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "starsCount",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "snippets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "searchKeywords",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "is_ai_generated",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "forksCount",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "snippets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "searchKeywords",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "is_ai_generated",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "snippets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "stars",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "starsCount",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "snippets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "stars",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "forksCount",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "snippets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "stars",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "snippets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "starsCount",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "snippets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "forksCount",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "snippets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "snippets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "is_ai_generated",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "starsCount",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "snippets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "is_ai_generated",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "forksCount",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "snippets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "is_ai_generated",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "snippets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "searchKeywords",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "starsCount",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "snippets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "searchKeywords",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "forksCount",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "snippets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "searchKeywords",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "snippets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "searchKeywords",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "is_ai_generated",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "starsCount",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "snippets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "searchKeywords",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "is_ai_generated",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "forksCount",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "snippets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "searchKeywords",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "is_ai_generated",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": [
+    {
+      "collectionGroup": "comments",
+      "fieldPath": "user_id",
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        },
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION_GROUP"
+        }
+      ]
+    }
+  ]
 }
