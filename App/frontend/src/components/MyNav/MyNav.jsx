@@ -52,7 +52,7 @@ const MyNav = () => {
           </Link>
 
           <a
-            href="https://github.com/infamousmick/SnippetVault/releases"
+            href="https://github.com/infamousmick/SnippetVault-2.0/releases"
             target="_blank"
             rel="noopener noreferrer"
             className="version-badge d-flex align-items-center gap-1"
