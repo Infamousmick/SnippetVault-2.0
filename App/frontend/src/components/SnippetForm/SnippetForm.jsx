@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect } from "react";
 import {
   Code2,
   Type,
@@ -25,12 +25,15 @@ import parserPostcss from "prettier/plugins/postcss";
 import markdown from "prettier/plugins/markdown";
 import yaml from "prettier/plugins/yaml";
 import ReactMarkdown from "react-markdown";
-import { AuthContext } from "../../context/AuthContext/AuthContext";
 import CustomAlert from "../CustomAlert/CustomAlert";
 import {
   GEMINI_MODELS,
   DEFAULT_GEMINI_MODEL,
 } from "../../constants/geminiModels";
+import {
+  generateSnippetFromPrompt,
+  getAiErrorMessage,
+} from "../../services/aiService";
 
 const SUPPORTED_LANGUAGES = [
   { value: "javascript", label: "JavaScript" },
@@ -80,7 +83,6 @@ const SnippetForm = ({
   const [isGeneratingWithGemini, setIsGeneratingWithGemini] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [alert, setAlert] = useState({ text: null, type: null });
-  const { logoutUser } = useContext(AuthContext);
   const [selectedModel, setSelectedModel] = useState(DEFAULT_GEMINI_MODEL);
 
   useEffect(() => {
@@ -138,56 +140,21 @@ const SnippetForm = ({
     setAlert({ type: null, text: null });
 
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(
-        `${import.meta.env.VITE_APP_SERVERURL}/ai/generate`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ description, language, model: selectedModel }),
-        },
+      const generatedCode = await generateSnippetFromPrompt(
+        description,
+        language,
+        selectedModel,
       );
-
-      if (response.status === 401) {
-        logoutUser();
-        return;
-      }
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        let displayMessage = errorData.message;
-
-        if (response.status === 429) {
-          displayMessage =
-            "You've reached the limit of 5 AI requests per minute on this app. Please wait a moment and try again.";
-        }
-        if (response.status === 503) {
-          displayMessage =
-            "The Gemini API quota has been exceeded (external service limit). Please try again later.";
-        }
-        if (response.status === 502) {
-          displayMessage =
-            "The AI service is temporarily unavailable. Please try again later.";
-        }
-
-        setAlert({ type: "danger", text: displayMessage });
-
-        return;
-      }
-
-      const data = await response.json();
 
       setFormData((prev) => ({
         ...prev,
-        code_content: data.generatedCode,
+        code_content: generatedCode,
         is_ai_generated: true,
       }));
       setPrettierError(null);
     } catch (error) {
-      setAlert({ type: "danger", text: "Connection error. Please try again." });
+      console.error(error);
+      setAlert({ type: "danger", text: getAiErrorMessage(error) });
     } finally {
       setIsGeneratingWithGemini(false);
     }

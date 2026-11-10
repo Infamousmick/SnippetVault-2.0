@@ -1,12 +1,15 @@
-import { useState, useContext, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Sparkles, Send, X } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-import { AuthContext } from "../../context/AuthContext/AuthContext";
 import CustomAlert from "../CustomAlert/CustomAlert";
 import {
   GEMINI_MODELS,
   DEFAULT_GEMINI_MODEL,
 } from "../../constants/geminiModels";
+import {
+  askAboutSnippet,
+  getAiErrorMessage,
+} from "../../services/aiService";
 import "./GeminiChatBox.css";
 
 const GeminiChatBox = ({ snippetId, onClose }) => {
@@ -14,7 +17,6 @@ const GeminiChatBox = ({ snippetId, onClose }) => {
   const [answer, setAnswer] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [alert, setAlert] = useState({ text: null, type: null });
-  const { logoutUser } = useContext(AuthContext);
   const answerRef = useRef(null);
   const [selectedModel, setSelectedModel] = useState(DEFAULT_GEMINI_MODEL);
 
@@ -40,49 +42,11 @@ const GeminiChatBox = ({ snippetId, onClose }) => {
     setAnswer(null);
 
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(
-        `${import.meta.env.VITE_APP_SERVERURL}/ai/${snippetId}/ask`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ question, model: selectedModel }),
-        },
-      );
-
-      if (response.status === 401) {
-        logoutUser();
-        return;
-      }
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        let displayMessage = errorData.message;
-
-        if (response.status === 429) {
-          displayMessage =
-            "You've reached the limit of 5 AI requests per minute on this app. Please wait a moment and try again.";
-        }
-        if (response.status === 503) {
-          displayMessage =
-            "The Gemini API quota has been exceeded (external service limit). Please try again later.";
-        }
-        if (response.status === 502) {
-          displayMessage =
-            "The AI service is temporarily unavailable. Please try again later.";
-        }
-
-        setAlert({ type: "danger", text: displayMessage });
-        return;
-      }
-
-      const data = await response.json();
-      setAnswer(data.answer);
+      const text = await askAboutSnippet(snippetId, question, selectedModel);
+      setAnswer(text);
     } catch (error) {
-      setAlert({ type: "danger", text: "Connection error. Please try again." });
+      console.error(error);
+      setAlert({ type: "danger", text: getAiErrorMessage(error) });
     } finally {
       setIsLoading(false);
     }
