@@ -101,10 +101,6 @@ To run SnippetVault locally for development and testing, follow these steps:
 
    - Create a .env file in the root of the frontend directory to store your API URL:
 
-   ```.env
-   VITE_APP_SERVERURL=http://localhost:9099
-   ```
-
    - Start the React development server:
 
    ```bash
