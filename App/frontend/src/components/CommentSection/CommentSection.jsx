@@ -4,9 +4,10 @@ import CommentForm from "../CommentForm/CommentForm";
 import CommentItem from "../CommentItem/CommentItem";
 import { AuthContext } from "../../context/AuthContext/AuthContext";
 import CustomAlert from "../CustomAlert/CustomAlert";
+import * as snippetsService from "../../services/snippetsService";
 
 const CommentSection = ({ snippetId, onCountChange }) => {
-  const { logoutUser, user } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
   const [comments, setComments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [alert, setAlert] = useState({ text: null, type: null });
@@ -17,6 +18,8 @@ const CommentSection = ({ snippetId, onCountChange }) => {
       : comment.user_id;
   };
 
+  // I commenti appena creati/modificati sono sempre dell'utente corrente:
+  // gli attacco i suoi dati (nome e avatar) al posto del solo id.
   const addCurrentUserData = (comment) => {
     if (!comment) return comment;
     if (!user || getCommentUserId(comment) !== user._id) return comment;
@@ -24,61 +27,34 @@ const CommentSection = ({ snippetId, onCountChange }) => {
     return {
       ...comment,
       user_id: {
-        ...user,
         _id: user._id,
+        username: user.username,
+        avatar_url: user.avatar_url ?? user.avatar ?? "https://placehold.co/150",
       },
     };
-  };
-
-  const getResponseData = async (response) => {
-    try {
-      return await response.json();
-    } catch {
-      return null;
-    }
-  };
-
-  const getResponseErrorMessage = (responseData, fallbackMessage) => {
-    if (responseData?.errors && Array.isArray(responseData.errors)) {
-      return responseData.errors.map((err) => err.message).join(" | ");
-    }
-    return responseData?.message || fallbackMessage;
   };
 
   const handleCreateComment = async (body) => {
     try {
       setAlert({ text: null, type: null });
-      const token = localStorage.getItem("token");
-      const response = await fetch(
-        `${import.meta.env.VITE_APP_SERVERURL}/snippets/${snippetId}/comments`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ body }),
-        },
+      const newComment = await snippetsService.createComment(
+        snippetId,
+        body,
+        user._id,
       );
-
-      const responseData = await getResponseData(response);
-
-      if (!response.ok) {
-        throw new Error(
-          getResponseErrorMessage(responseData, "Unable to send the comment."),
-        );
-      }
-
-      if (!responseData?.newComment) {
-        throw new Error("Unable to read the saved comment.");
-      }
-
       setComments((prevComments) => [
         ...prevComments,
-        addCurrentUserData(responseData.newComment),
+        addCurrentUserData(newComment),
       ]);
     } catch (error) {
-      setAlert({ text: error.message, type: "danger" });
+      console.error(error);
+      setAlert({
+        text: snippetsService.getFirestoreErrorMessage(
+          error,
+          "Unable to send the comment.",
+        ),
+        type: "danger",
+      });
     }
   };
 
@@ -90,118 +66,77 @@ const CommentSection = ({ snippetId, onCountChange }) => {
 
     try {
       setAlert({ text: null, type: null });
-      const token = localStorage.getItem("token");
-      const response = await fetch(
-        `${import.meta.env.VITE_APP_SERVERURL}/snippets/${snippetId}/comments/${commentId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-
-      if (!response.ok) {
-        const responseData = await getResponseData(response);
-        throw new Error(
-          getResponseErrorMessage(
-            responseData,
-            "Unable to delete the comment.",
-          ),
-        );
-      }
-
+      await snippetsService.deleteComment(snippetId, commentId);
       setComments((prevComments) =>
         prevComments.filter((c) => c._id !== commentId),
       );
     } catch (error) {
       console.error(error);
-      setAlert({ text: error.message, type: "danger" });
+      setAlert({
+        text: snippetsService.getFirestoreErrorMessage(
+          error,
+          "Unable to delete the comment.",
+        ),
+        type: "danger",
+      });
     }
   };
 
   const handleEditComment = async (commentId, newBody) => {
     try {
       setAlert({ text: null, type: null });
-      const token = localStorage.getItem("token");
-      const response = await fetch(
-        `${import.meta.env.VITE_APP_SERVERURL}/snippets/${snippetId}/comments/${commentId}`,
-        {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ body: newBody }),
-        },
+      const updatedComment = await snippetsService.editComment(
+        snippetId,
+        commentId,
+        newBody,
       );
-
-      const responseData = await getResponseData(response);
-
-      if (!response.ok) {
-        throw new Error(
-          getResponseErrorMessage(responseData, "Unable to edit the comment."),
-        );
-      }
-
-      const updatedComment =
-        responseData?.editedComment ||
-        responseData?.updatedComment ||
-        responseData?.comment ||
-        responseData;
 
       setComments((prevComments) =>
         prevComments.map((comment) =>
           comment._id === commentId
-            ? addCurrentUserData({
-                ...comment,
-                ...updatedComment,
-                body: updatedComment?.body || newBody,
-                user_id: updatedComment?.user_id || comment.user_id,
-              })
+            ? addCurrentUserData({ ...comment, ...updatedComment })
             : comment,
         ),
       );
     } catch (error) {
-      setAlert({ text: error.message, type: "danger" });
+      console.error(error);
+      setAlert({
+        text: snippetsService.getFirestoreErrorMessage(
+          error,
+          "Unable to edit the comment.",
+        ),
+        type: "danger",
+      });
     }
   };
 
   useEffect(() => {
     const getComments = async () => {
       try {
-        const token = localStorage.getItem("token");
-        const response = await fetch(
-          `${import.meta.env.VITE_APP_SERVERURL}/snippets/${snippetId}/comments`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          },
-        );
-
-        if (response.status === 401) {
-          logoutUser();
-          return;
-        }
-        if (!response.ok) throw new Error("Unable to retrieve data");
-
-        const data = await response.json();
-        setComments(data.allComments);
+        const data = await snippetsService.listComments(snippetId);
+        setComments(data);
       } catch (error) {
         console.error(error);
+        setAlert({
+          text: snippetsService.getFirestoreErrorMessage(
+            error,
+            "Unable to retrieve the comments.",
+          ),
+          type: "danger",
+        });
       } finally {
         setIsLoading(false);
       }
     };
     getComments();
-  }, [snippetId, logoutUser]);
+  }, [snippetId]);
+
   useEffect(() => {
     if (onCountChange && !isLoading) {
       onCountChange(comments.length);
     }
   }, [comments, onCountChange, isLoading]);
+
   return (
     <div className="comment-section-container mt-3 pt-3 border-top-subtle">
       <div className="comment-form-wrapper">
@@ -229,7 +164,6 @@ const CommentSection = ({ snippetId, onCountChange }) => {
               key={comment._id}
               comment={comment}
               onDelete={handleDeleteComment}
-
               onEdit={handleEditComment}
             />
           ))}

@@ -29,12 +29,6 @@ import CommentSection from "../CommentSection/CommentSection";
 import GeminiChatBox from "../GeminiChatBox/GeminiChatBox";
 import CustomAlert from "../CustomAlert/CustomAlert";
 
-const countItems = (value) => {
-  if (Array.isArray(value)) return value.length;
-
-  return 0;
-};
-
 const SnippetCard = ({
   snippet,
   onToggleStar,
@@ -52,7 +46,7 @@ const SnippetCard = ({
   const [showComments, setShowComments] = useState(false);
   const data = snippet || {};
   const [localCommentsCount, setLocalCommentsCount] = useState(
-    countItems(data.comments),
+    data.commentsCount ?? 0,
   );
   const [isAiOpen, setIsAiOpen] = useState(false);
 
