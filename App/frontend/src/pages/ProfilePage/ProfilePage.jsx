@@ -1,5 +1,5 @@
 import { Container, Row, Col, Spinner } from "react-bootstrap";
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { Star, SquareDashedBottomCode } from "lucide-react";
 import BaseLayout from "../../Layout/BaseLayout";
@@ -12,6 +12,7 @@ import CustomAlert from "../../components/CustomAlert/CustomAlert";
 import { SnippetContext } from "../../context/SnippetContext/SnippetContext";
 import PaginationControls from "../../components/PaginationControls/PaginationControls";
 import { mergeSnippetUpdate } from "../../utils/mergeSnippetUpdate";
+import * as snippetsService from "../../services/snippetsService";
 import {
   SNIPPET_FILTERS,
   SNIPPET_FILTER_TOGGLES,
@@ -20,7 +21,7 @@ import "./ProfilePage.css";
 
 const ProfilePage = () => {
   const { userId } = useParams();
-  const { user, logoutUser } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
   const {
     handleToggleStar,
     debouncedQuery,
@@ -36,6 +37,9 @@ const ProfilePage = () => {
   const [activeFilter, setActiveFilter] = useState(SNIPPET_FILTERS[0]);
   const [isStarredOnly, setIsStarredOnly] = useState(false);
   const [isAiOnly, setIsAiOnly] = useState(false);
+  // cursori di paginazione di Firestore per questa pagina
+  const cursorStoreRef = useRef({ key: null, cursors: [] });
+
   const displayTitle = userId
     ? "No snippets found for this user."
     : "No snippet found in your profile";
@@ -43,6 +47,7 @@ const ProfilePage = () => {
     ? "This developer hasn't shared any snippets yet."
     : "You haven't published anything yet. Share your first shell command, script, or React component to get started!";
   const targetUserId = userId || user?._id;
+  const currentUserId = user?._id;
 
   useEffect(() => {
     setPage(1);
@@ -66,17 +71,17 @@ const ProfilePage = () => {
     setPage(1);
   };
 
-  const handleProfileStarToggle = async (snippetId, currentUserId) => {
+  const handleProfileStarToggle = async (snippetId, userIdWhoStars) => {
     setSnippets((prevSnippets) =>
       prevSnippets.map((snippet) => {
         if (snippet._id.toString() !== snippetId) return snippet;
 
-        const hasStarred = snippet.stars.includes(currentUserId);
+        const hasStarred = snippet.stars.includes(userIdWhoStars);
         return {
           ...snippet,
           stars: hasStarred
-            ? snippet.stars.filter((id) => id !== currentUserId)
-            : [...snippet.stars, currentUserId],
+            ? snippet.stars.filter((id) => id !== userIdWhoStars)
+            : [...snippet.stars, userIdWhoStars],
           starsCount: hasStarred
             ? snippet.starsCount - 1
             : snippet.starsCount + 1,
@@ -84,7 +89,7 @@ const ProfilePage = () => {
       }),
     );
 
-    handleToggleStar(snippetId, currentUserId);
+    handleToggleStar(snippetId, userIdWhoStars);
   };
 
   useEffect(() => {
@@ -92,43 +97,46 @@ const ProfilePage = () => {
       setIsLoading(true);
       setAlert({ text: null, type: null });
       try {
-        const token = localStorage.getItem("token");
-
-        const response = await fetch(
-          `${import.meta.env.VITE_APP_SERVERURL}/users/${targetUserId}?sort=${activeFilter}&page=${page}&pageSize=5&queryStr=${encodeURIComponent(debouncedQuery)}&starred=${isStarredOnly}&ai=${isAiOnly}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
+        const [profile, data] = await Promise.all([
+          snippetsService.getUserProfile(targetUserId),
+          snippetsService.listSnippets(
+            {
+              sort: activeFilter,
+              page,
+              pageSize: 5,
+              queryStr: debouncedQuery,
+              starred: isStarredOnly,
+              ai: isAiOnly,
+              uid: currentUserId,
+              authorId: targetUserId,
             },
-          },
-        );
+            cursorStoreRef.current,
+          ),
+        ]);
 
-        if (response.status === 401) {
-          logoutUser();
-          return;
-        }
-
-        if (!response.ok) throw new Error("Failed to fetch profile data");
-
-        const data = await response.json();
-
-        setSnippets(data.user.snippets || []);
-        setProfileUser(data.user);
-        setTotalPages(data.user.totalPages || 1);
+        setSnippets(data.allSnippets || []);
+        setProfileUser(profile);
+        setTotalPages(data.totalPages || 1);
       } catch (error) {
-        setAlert({ text: error.message, type: "danger" });
+        console.error(error);
+        setAlert({
+          text: snippetsService.getFirestoreErrorMessage(
+            error,
+            "Failed to fetch profile data",
+          ),
+          type: "danger",
+        });
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (targetUserId) {
+    if (targetUserId && currentUserId) {
       fetchProfileData();
     }
   }, [
     targetUserId,
-    user,
-    logoutUser,
+    currentUserId,
     page,
     debouncedQuery,
     activeFilter,

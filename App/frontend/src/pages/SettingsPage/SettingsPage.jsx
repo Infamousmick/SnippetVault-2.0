@@ -1,4 +1,4 @@
-import { useState, useContext, useEffect } from "react";
+import { useState, useContext } from "react";
 import { Container, Tab, Nav, Row, Col } from "react-bootstrap";
 import {
   ShieldAlert,
@@ -13,10 +13,20 @@ import BaseLayout from "../../Layout/BaseLayout";
 import MyButton from "../../components/MyButton/MyButton";
 import { AuthContext } from "../../context/AuthContext/AuthContext";
 import CustomAlert from "../../components/CustomAlert/CustomAlert";
+import {
+  changePassword,
+  changeUsername,
+  uploadAvatar,
+  saveGeminiKey,
+  removeGeminiKey,
+  deleteAccount,
+} from "../../services/userService";
 
 const SettingsPage = () => {
-  const { isLoggedIn, user, isOauth, updateUser, logoutUser } =
-    useContext(AuthContext);
+  const { isLoggedIn, user, updateUser, logoutUser } = useContext(AuthContext);
+
+  // Si può cambiare la password solo se l'account ha il provider email/password
+  const hasPassword = Boolean(user?.providers?.includes("password"));
 
   const [passwordData, setPasswordData] = useState({
     oldPassword: "",
@@ -40,11 +50,6 @@ const SettingsPage = () => {
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
   const [isUsernameLoading, setIsUsernameLoading] = useState(false);
   const [isAvatarLoading, setIsAvatarLoading] = useState(false);
-  const [showPasswords, setShowPasswords] = useState({
-    old: false,
-    new: false,
-    confirm: false,
-  });
   const [aiKey, setAiKey] = useState("");
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiMessage, setAiMessage] = useState({ type: null, text: null });
@@ -55,12 +60,6 @@ const SettingsPage = () => {
     text: null,
   });
 
-  const specificError = (data) => {
-    return data.errors && data.errors.length > 0
-      ? data.errors[0].message
-      : data.message;
-  };
-
   const handleDeleteAccount = async (e) => {
     e.preventDefault();
     if (deleteConfirmInput !== user?.username) return;
@@ -69,30 +68,11 @@ const SettingsPage = () => {
     setDeleteMessage({ type: null, text: null });
 
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(
-        `${import.meta.env.VITE_APP_SERVERURL}/users/${user._id}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-
-      if (response.status === 401) {
-        logoutUser();
-        return;
-      }
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          specificError(data) || "Error while deleting your account.",
-        );
-      }
-
-      setDeleteMessage({ type: "success", text: data.message });
-
+      await deleteAccount();
+      setDeleteMessage({
+        type: "success",
+        text: "Account deleted successfully.",
+      });
       setTimeout(() => logoutUser(), 3000);
     } catch (error) {
       setDeleteMessage({ type: "danger", text: error.message });
@@ -127,44 +107,23 @@ const SettingsPage = () => {
     }
 
     setIsPasswordLoading(true);
-    const token = localStorage.getItem("token");
 
     try {
-      if (isOauth) {
+      if (!hasPassword) {
         throw new Error("Oauth users cannot modify password");
       } else if (!isLoggedIn) {
         throw new Error("You must be logged in!");
       }
 
-      const { oldPassword, newPassword } = passwordData;
-      const payload = { oldPassword, newPassword };
-
-      const response = await fetch(
-        `${import.meta.env.VITE_APP_SERVERURL}/auth/password`,
-        {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        },
+      await changePassword(
+        passwordData.oldPassword,
+        passwordData.newPassword,
       );
 
-      if (response.status === 401) {
-        logoutUser();
-        return;
-      }
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          specificError(data) || "Error while updating the password..",
-        );
-      }
-
-      setPasswordMessage({ type: "success", text: data.message });
-
+      setPasswordMessage({
+        type: "success",
+        text: "Password changed successfully!",
+      });
       setPasswordData({
         oldPassword: "",
         newPassword: "",
@@ -191,35 +150,10 @@ const SettingsPage = () => {
         return;
       }
 
-      const payload = {
-        username: username,
-      };
-      const token = localStorage.getItem("token");
-      const response = await fetch(
-        `${import.meta.env.VITE_APP_SERVERURL}/users/${user._id}`,
-        {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        },
-      );
+      const updatedUsername = await changeUsername(user._id, username);
 
-      if (response.status === 401) {
-        logoutUser();
-        return;
-      }
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(
-          specificError(data) || "Error while updating the username..",
-        );
-      }
-
-      updateUser({ ...user, username: username });
-      setUsernameMessage({ type: "success", text: data.message });
+      updateUser({ username: updatedUsername });
+      setUsernameMessage({ type: "success", text: "User info updated" });
     } catch (error) {
       setUsernameMessage({ type: "danger", text: error.message });
     } finally {
@@ -239,36 +173,14 @@ const SettingsPage = () => {
     setAvatarMessage({ type: null, text: null });
 
     try {
-      const token = localStorage.getItem("token");
-      const userId = user._id;
-      const formData = new FormData();
-      formData.append("avatar", avatarFile);
+      const url = await uploadAvatar(user._id, avatarFile);
 
-      const response = await fetch(
-        `${import.meta.env.VITE_APP_SERVERURL}/users/${userId}/avatar`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        },
-      );
-
-      if (response.status === 401) {
-        logoutUser();
-        return;
-      }
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          specificError(data) || "Error while uploading the avatar..",
-        );
-      }
-
-      setAvatarMessage({ type: "success", text: data.message });
-      updateUser(data.user);
+      updateUser({ avatar: url, avatar_url: url });
+      setAvatarMessage({
+        type: "success",
+        text: "Avatar uploaded successfully",
+      });
+      setAvatarFile(null);
     } catch (error) {
       setAvatarMessage({ type: "danger", text: error.message });
     } finally {
@@ -284,37 +196,9 @@ const SettingsPage = () => {
     setAiMessage({ type: null, text: null });
 
     try {
-      const token = localStorage.getItem("token");
+      await saveGeminiKey(aiKey.trim());
 
-      const payload = {
-        gemini_key: aiKey,
-      };
-
-      const response = await fetch(
-        `${import.meta.env.VITE_APP_SERVERURL}/users/${user._id}/gemini-key`,
-        {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        },
-      );
-
-      if (response.status === 401) {
-        logoutUser();
-        return;
-      }
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(
-          specificError(data) || "Error while updating Gemini API key..",
-        );
-      }
-
-      updateUser({ ...user, hasGeminiKey: true });
+      updateUser({ hasGeminiKey: true });
       setAiKey("");
       setAiMessage({ type: "success", text: "API Key updated successfully!" });
     } catch (err) {
@@ -334,28 +218,9 @@ const SettingsPage = () => {
     setAiMessage({ type: null, text: null });
 
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(
-        `${import.meta.env.VITE_APP_SERVERURL}/users/${user._id}/gemini-key`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
+      await removeGeminiKey();
 
-      if (response.status === 401) {
-        logoutUser();
-        return;
-      }
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(specificError(data) || "Error while deleting API key.");
-      }
-
-      updateUser({ ...user, hasGeminiKey: false });
+      updateUser({ hasGeminiKey: false });
       setAiKey("");
       setAiMessage({ type: "success", text: "API Key removed successfully!" });
     } catch (err) {
@@ -364,6 +229,7 @@ const SettingsPage = () => {
       setIsAiLoading(false);
     }
   };
+
   return (
     <BaseLayout>
       <Container className="py-5">
@@ -408,7 +274,7 @@ const SettingsPage = () => {
             <Col lg={9}>
               <Tab.Content className="settings-content-card">
                 <Tab.Pane eventKey="security">
-                  {!isOauth ? (
+                  {hasPassword ? (
                     <>
                       <div className="mb-4">
                         <h4 className="settings-section-title mb-2">
@@ -555,6 +421,7 @@ const SettingsPage = () => {
                           onChange={(e) => setUsername(e.target.value)}
                           required
                           minLength={3}
+                          maxLength={20}
                         />
                       </div>
 
