@@ -1,0 +1,13 @@
+{
+  "name": "migrate-mongo-to-firebase",
+  "private": true,
+  "description": "One-off migration of SnippetVault 1.0 (MongoDB) to Firebase",
+  "scripts": {
+    "dry-run": "node migrate.js --dry-run",
+    "migrate": "node migrate.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.0.0",
+    "mongodb": "^6.0.0"
+  }
+}
