@@ -19,16 +19,79 @@ const REGION = "europe-west1";
 // firebase functions:secrets:set CRYPTO_SECRET
 const CRYPTO_SECRET = defineSecret("CRYPTO_SECRET");
 
-const AVAILABLE_MODELS = [
-  "gemini-2.5-flash",
-  "gemini-2.5-pro",
-  "gemini-2.5-flash-lite",
-  "gemini-3-flash-preview",
-  "gemini-3.1-pro",
-  "gemini-3.1-flash-lite",
-  "gemini-3.5-flash",
-];
-const DEFAULT_MODEL = "gemini-2.5-flash";
+// Usato solo se l'elenco dei modelli non è raggiungibile
+const FALLBACK_MODEL = "gemini-2.5-flash";
+
+// Modelli di testo "principali": esclude snapshot datati, immagini, audio,
+// embedding, ecc. e ordina per versione, poi pro > flash > flash-lite,
+// poi stabili prima delle preview.
+const EXCLUDE = /(tts|image|live|audio|embedding|robotics|computer|vision|aqa|customtools|-exp|learnlm|gemma)/;
+const SNAPSHOT = /(-\d{3}|-\d{2}-\d{2,4})$/;
+const PATTERN = /^gemini-(\d+(?:\.\d+)?)-(pro|flash-lite|flash)(?:-(preview.*))?$/;
+const TIER_RANK = { pro: 0, flash: 1, "flash-lite": 2 };
+
+const compareVersions = (a, b) => {
+  const pa = a.split(".").map(Number);
+  const pb = b.split(".").map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const diff = (pb[i] ?? 0) - (pa[i] ?? 0);
+    if (diff) return diff;
+  }
+  return 0;
+};
+
+const rankModels = (rawModels) => {
+  const items = [];
+  for (const m of rawModels) {
+    const id = (m.name || "").replace(/^models\//, "");
+    const actions = m.supportedActions ?? m.supportedGenerationMethods ?? [];
+    if (!actions.includes("generateContent")) continue;
+    if (EXCLUDE.test(id) || SNAPSHOT.test(id)) continue;
+    const match = PATTERN.exec(id);
+    if (!match) continue;
+    items.push({
+      value: id,
+      label: m.displayName || id,
+      version: match[1],
+      tier: match[2],
+      preview: Boolean(match[3]),
+    });
+  }
+  items.sort(
+    (a, b) =>
+      compareVersions(a.version, b.version) ||
+      TIER_RANK[a.tier] - TIER_RANK[b.tier] ||
+      Number(a.preview) - Number(b.preview),
+  );
+  // Default: il flash stabile più recente (veloce ed economico)
+  const best =
+    items.find((i) => i.tier === "flash" && !i.preview) ||
+    items.find((i) => i.tier === "flash") ||
+    items[0];
+  return {
+    models: items.map(({ value, label }) => ({ value, label })),
+    defaultModel: best ? best.value : null,
+  };
+};
+
+const MODEL_CACHE_TTL_MS = 60 * 60 * 1000;
+const modelCache = new Map();
+
+// Elenco dei modelli disponibili per la chiave dell'utente (cache di 1 ora)
+const getModelList = async (apiKey) => {
+  const cacheKey = crypto.createHash("sha256").update(apiKey).digest("hex").slice(0, 16);
+  const cached = modelCache.get(cacheKey);
+  if (cached && Date.now() - cached.at < MODEL_CACHE_TTL_MS) return cached.value;
+
+  const ai = new GoogleGenAI({ apiKey });
+  const pager = await ai.models.list({ config: { pageSize: 100 } });
+  const raw = [];
+  for await (const m of pager) raw.push(m);
+
+  const value = rankModels(raw);
+  modelCache.set(cacheKey, { at: Date.now(), value });
+  return value;
+};
 
 const RATE_LIMIT_MAX = 5;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
@@ -115,18 +178,38 @@ const getUserApiKey = async (uid) => {
   return apiKey;
 };
 
-const callGemini = async (apiKey, model, prompt) => {
-  const selectedModel = AVAILABLE_MODELS.includes(model) ? model : DEFAULT_MODEL;
+const isInvalidKeyError = (err) =>
+  err.status === 401 ||
+  err.status === 403 ||
+  /API key not valid/i.test(err.message || "");
+
+const callGemini = async (apiKey, requestedModel, prompt) => {
+  // Se il modello richiesto non esiste più, uso il migliore disponibile
+  let model = requestedModel || FALLBACK_MODEL;
+  try {
+    const { models, defaultModel } = await getModelList(apiKey);
+    if (models.length) {
+      model = models.some((m) => m.value === requestedModel)
+        ? requestedModel
+        : defaultModel;
+    }
+  } catch (err) {
+    console.warn("Unable to list Gemini models:", err.message);
+  }
+
   try {
     const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
-      model: selectedModel,
+      model,
       contents: prompt,
     });
     return response.text;
   } catch (err) {
     if (err.status === 429) {
       fail("unavailable", "Gemini API quota exceeded.", "GEMINI_QUOTA");
+    }
+    if (isInvalidKeyError(err)) {
+      fail("failed-precondition", "Gemini API Key is not valid.", "GEMINI_KEY_INVALID");
     }
     console.error("Gemini error:", err.message);
     fail("unavailable", "Gemini API request failed.", "GEMINI_ERROR");
@@ -170,6 +253,30 @@ exports.deleteGeminiKey = onCall({ region: REGION }, async (request) => {
 /* ------------------------------------------------------------------ */
 /* AI                                                                  */
 /* ------------------------------------------------------------------ */
+
+exports.getGeminiModels = onCall(
+  { region: REGION, secrets: [CRYPTO_SECRET] },
+  async (request) => {
+    const uid = requireAuth(request);
+    const apiKey = await getUserApiKey(uid);
+
+    try {
+      const result = await getModelList(apiKey);
+      if (!result.models.length) {
+        fail("unavailable", "No Gemini models available.", "GEMINI_ERROR");
+      }
+      return result;
+    } catch (err) {
+      if (err instanceof HttpsError) throw err;
+      console.error("Gemini list error:", err.message);
+      fail(
+        isInvalidKeyError(err) ? "failed-precondition" : "unavailable",
+        "Unable to list Gemini models.",
+        isInvalidKeyError(err) ? "GEMINI_KEY_INVALID" : "GEMINI_ERROR",
+      );
+    }
+  },
+);
 
 exports.askAboutSnippet = onCall(
   { region: REGION, secrets: [CRYPTO_SECRET], timeoutSeconds: 120 },

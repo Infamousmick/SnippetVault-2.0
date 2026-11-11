@@ -26,10 +26,8 @@ import markdown from "prettier/plugins/markdown";
 import yaml from "prettier/plugins/yaml";
 import ReactMarkdown from "react-markdown";
 import CustomAlert from "../CustomAlert/CustomAlert";
-import {
-  GEMINI_MODELS,
-  DEFAULT_GEMINI_MODEL,
-} from "../../constants/geminiModels";
+import { DEFAULT_GEMINI_MODEL } from "../../constants/geminiModels";
+import { useGeminiModels } from "../../hooks/useGeminiModels";
 import {
   generateSnippetFromPrompt,
   getAiErrorMessage,
@@ -83,7 +81,9 @@ const SnippetForm = ({
   const [isGeneratingWithGemini, setIsGeneratingWithGemini] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [alert, setAlert] = useState({ text: null, type: null });
-  const [selectedModel, setSelectedModel] = useState(DEFAULT_GEMINI_MODEL);
+  const { models: geminiModels, defaultModel } = useGeminiModels();
+  const [chosenModel, setChosenModel] = useState(null);
+  const selectedModel = chosenModel ?? defaultModel;
 
   useEffect(() => {
     if (initialData) {
@@ -356,11 +356,11 @@ const SnippetForm = ({
                 <select
                   className="gemini-model-select"
                   value={selectedModel}
-                  onChange={(e) => setSelectedModel(e.target.value)}
+                  onChange={(e) => setChosenModel(e.target.value)}
                   disabled={isGeneratingWithGemini}
                   aria-label="Select Gemini model"
                 >
-                  {GEMINI_MODELS.map((m) => (
+                  {geminiModels.map((m) => (
                     <option key={m.value} value={m.value}>
                       {m.label}
                     </option>

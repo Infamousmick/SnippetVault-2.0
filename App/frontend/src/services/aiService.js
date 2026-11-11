@@ -12,6 +12,8 @@ export const getAiErrorMessage = (error) => {
       return "Gemini API Key not configured. Add it in Settings > AI Integrations.";
     case "GEMINI_QUOTA":
       return "The Gemini API quota has been exceeded (external service limit). Please try again later.";
+    case "GEMINI_KEY_INVALID":
+      return "Your Gemini API Key is not valid. Check it in Settings > AI Integrations.";
     case "GEMINI_ERROR":
       return "The AI service is temporarily unavailable. Please try again later.";
     default:
@@ -38,10 +40,20 @@ export const askAboutSnippet = async (snippetId, question, model) => {
   return result.data.answer;
 };
 
-export const generateSnippetFromPrompt = async (description, language, model) => {
+export const generateSnippetFromPrompt = async (
+  description,
+  language,
+  model,
+) => {
   const result = await httpsCallable(
     functions,
     "generateSnippetFromPrompt",
   )({ description, language, model });
   return result.data.generatedCode;
+};
+
+// Elenco dei modelli Gemini disponibili per la chiave dell'utente, già ordinato
+export const getGeminiModels = async () => {
+  const result = await httpsCallable(functions, "getGeminiModels")();
+  return result.data; // { models: [{ value, label }], defaultModel }
 };
