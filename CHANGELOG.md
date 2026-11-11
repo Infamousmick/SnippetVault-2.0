@@ -1,6 +1,42 @@
 # Changelog
 
 All notable changes to the SnippetVault project will be documented in this file.
+
+## [2.0.0] - 2026-11-10
+
+SnippetVault 2.0 replaces the Express and MongoDB backend with a serverless Firebase architecture: Authentication, Firestore, Cloud Storage, Cloud Functions and Hosting.
+
+### ⚠️ Breaking Changes
+
+- **New backend:** The Express API, Passport OAuth flow, JWT sessions and Cloudinary uploads have been removed in favor of Firebase. Existing 1.x data can be imported with the migration script in `scripts/migrate-mongo`.
+- **Email-only login:** Signing in with a username is no longer supported; the username is now a unique public handle (3-20 characters: letters, numbers, `.`, `_`, `-`).
+- **Search & pagination:** Search is now prefix-based on title, description, language and tags (no more substring matching), and pagination relies on Firestore cursors.
+- **New content limits:** Title up to 150 characters, description up to 1000, code up to 50,000, a maximum of 10 tags per snippet, comments between 5 and 100 characters.
+
+### ✨ Features
+
+- **Firebase Authentication:** Email/password, Google and GitHub sign-in, with automatic linking of accounts that share the same email.
+- **Unique Usernames:** Usernames are reserved atomically, so changing a nickname can never leave duplicates.
+- **Avatar Upload on Cloud Storage:** JPEG, PNG or WebP images up to 2 MB, enforced by Storage rules.
+- **Gemini via Cloud Functions:** Code generation and snippet analysis now run server-side. Personal API keys are encrypted with AES-256-GCM and never reach the browser.
+- **Dynamic Gemini Models:** The model selector is populated live from the Gemini API, ordered by version and tier (Pro, Flash, Flash-Lite), with the latest stable Flash as default. No more manual model lists to maintain.
+- **Complete Account Deletion:** A dedicated Cloud Function removes the user's snippets, stars, forks and comments, and requires a recent login.
+- **MongoDB Migration Script:** A one-off script imports users (including bcrypt password hashes and Google/GitHub identities), snippets, forks, stars and comments, with a dry-run mode.
+
+### 🛡️ Security
+
+- **Firestore Security Rules:** Replaced `express-validator` and ownership middlewares with field whitelists, owner-only edits, consistent star/fork counters and one fork per user and snippet.
+- **Cloud Storage Rules:** Users can only write their own avatar, with type and size validation.
+- **Server-side Rate Limiting:** AI requests are limited to 5 per minute per user, backed by Firestore so it holds across function instances.
+- **Private Data Isolation:** Encrypted keys and rate-limit counters live in collections that clients cannot read or write.
+
+### ♻️ Refactoring
+
+- **Data Layer:** Introduced `snippetsService`, `userService` and `aiService`, keeping the public API of `AuthContext` and `SnippetContext` unchanged so components needed minimal edits.
+- **Safer Star Toggle:** Stars now use a transaction that reads the real server state, with optimistic UI and automatic rollback on failure.
+- **Orphan Cleanup:** A Firestore trigger deletes a snippet's comments when the snippet is removed.
+- **Infrastructure Cleanup:** Removed the Express backend and the Vercel configuration; the app is now hosted on Firebase Hosting.
+
 ## [1.7.0] - 2026-07-22
 
 ### ✨ Features
@@ -48,7 +84,7 @@ All notable changes to the SnippetVault project will be documented in this file.
 
 - **User Profile Hub:** Implemented dedicated profile pages allowing developers to showcase their published snippets.
 - **Profile Search & Pagination:** Integrated real-time, debounced regex search and dedicated pagination specifically for browsing individual user profiles.
-- **Starring System:** Introduced the ability to "star" (favorite) snippets. 
+- **Starring System:** Introduced the ability to "star" (favorite) snippets.
 
 ### 🎨 Improvements
 
@@ -103,6 +139,7 @@ All notable changes to the SnippetVault project will be documented in this file.
   - Integrated dynamic comment counting, synchronized between frontend and backend.
 
 ### 🛠️ Backend & Architecture
+
 - **Data Synchronization:**
   - Implemented $push and $pull MongoDB operators in the backend services to maintain data consistency between the Snippets and Comments schemas.
   - Added ownership validation check to ensure only authorized users can edit or delete their own comments.
@@ -111,6 +148,7 @@ All notable changes to the SnippetVault project will be documented in this file.
   - Integrated robust input validation and sanitization middleware for all comment-related API routes.
 
 ### 🐛 Bug Fixes
+
 - UX/UI Stability:
   - Fixed an error caused by improper DOM nesting in the SnippetCard Markdown description.
 
