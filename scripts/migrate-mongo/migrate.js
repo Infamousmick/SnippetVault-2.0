@@ -192,6 +192,7 @@ const transform = ({ users, snippets, comments, keepGeminiKeys }) => {
   for (const s of snippets) {
     if (!migratable(s)) {
       skipped.snippets++;
+      warnings.push(`snippet ${s._id} saltato: l'autore ${s.user_id} non esiste più`);
       continue;
     }
     const id = newSnippetId(s);
@@ -255,6 +256,12 @@ const transform = ({ users, snippets, comments, keepGeminiKeys }) => {
     const parent = snippetById.get(String(c.snippet_id));
     if (!migratable(parent) || !userInfo.has(String(c.user_id))) {
       skipped.comments++;
+      const reason = !parent
+        ? `lo snippet ${c.snippet_id} non esiste più`
+        : !migratable(parent)
+          ? `l'autore dello snippet ${c.snippet_id} non esiste più`
+          : `l'autore del commento ${c.user_id} non esiste più`;
+      warnings.push(`commento ${c._id} saltato: ${reason}`);
       continue;
     }
     const snippetId = newSnippetId(parent);
