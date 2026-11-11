@@ -43,7 +43,7 @@ const MyFooter = () => {
               </Link>
 
               <a
-                href="https://github.com/Infamousmick/SnippetVault"
+                href="https://github.com/Infamousmick/SnippetVault-2.0"
                 target="_blank"
                 rel="noreferrer"
                 className="d-inline-flex align-items-center gap-1"
